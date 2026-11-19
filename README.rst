@@ -78,7 +78,7 @@ Board: ESP32-S3-DevKitC-1 with the N16R8 module (16 MB flash, 8 MB octal PSRAM).
      - 1 and 2
      - Connect both pins.
 
-Put a 74HCT244 or 74AHCT125 buffer, or at least 150 ohm series resistors, between the GPIOs and the connector.
+The development setup drives the monitor directly from the GPIOs, with no buffer and no resistors, and the picture is stable. If your monitor misbehaves, put a 74HCT244 or 74AHCT125 buffer, or 150 ohm series resistors, between the GPIOs and the connector.
 
 .. raw:: html
 

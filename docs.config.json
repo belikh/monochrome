@@ -1,0 +1,12 @@
+{
+  "project": "Monochrome",
+  "id": "monochrome",
+  "description": "ESP32-S3 firmware that drives a TTL monochrome MDA or Hercules type monitor at 720x350.",
+  "icon": "monitor",
+  "repo": "https://github.com/belikh/monochrome",
+  "glossary": {
+    "MDA": "The IBM Monochrome Display Adapter signal: 720x350 pixels, 18.43 kHz horizontal, about 50 Hz vertical, TTL levels on a DE-9 connector.",
+    "Bounce buffer": "A pair of small internal RAM buffers that the RGB LCD driver fills from a framebuffer in PSRAM and sends to the pins.",
+    "Porch": "The blank pixels or lines between the end of the picture and the sync pulse (front porch) or after it (back porch)."
+  }
+}
