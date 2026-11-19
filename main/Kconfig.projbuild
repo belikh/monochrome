@@ -1,0 +1,21 @@
+menu "Monochrome"
+
+    config MONO_WIFI_SSID
+        string "Wi-Fi network name (SSID)"
+        default ""
+        help
+            Network that mode 3 joins. Set it with idf.py menuconfig. It is stored in the local,
+            untracked sdkconfig file, so it stays out of the repository.
+
+    config MONO_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default ""
+        help
+            Leave empty for an open network.
+
+    config MONO_PORT
+        int "TCP port for incoming frames"
+        default 5050
+        range 1 65535
+
+endmenu

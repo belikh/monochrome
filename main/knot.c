@@ -2,11 +2,13 @@
 // sorting, back-face culling and an ordered dither down to the monitor's three levels
 // (black, normal, bright). The two cores each rasterise one half of the screen.
 #include "knot.h"
+#include "frames.h"
 #include <math.h>
 #include <string.h>
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_lcd_panel_ops.h"
+#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 #define W 720
@@ -251,7 +253,7 @@ static void worker(void *arg)
 
 // ---- main loop -------------------------------------------------------------------------
 
-void knot_run(esp_lcd_panel_handle_t panel, uint8_t *fb0, uint8_t *fb1, SemaphoreHandle_t vsync_sem)
+void knot_run(esp_lcd_panel_handle_t panel, uint8_t *fb0, uint8_t *fb1)
 {
     build_scene();
     main_task = xTaskGetCurrentTaskHandle();
@@ -276,10 +278,10 @@ void knot_run(esp_lcd_panel_handle_t panel, uint8_t *fb0, uint8_t *fb1, Semaphor
         int64_t t3 = esp_timer_get_time();
         t_acc += t3 - t0; p_acc += t1 - t0; r_acc += t2 - t1; w_acc += t3 - t2;
 
-        // show the finished buffer, then wait until the old one has been fully scanned out
+        // show the finished buffer, then wait until the driver has latched it, which frees the old one
+        uint32_t since = g_latched;
         ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel, 0, 0, W, H, back));
-        xSemaphoreTake(vsync_sem, 0);
-        xSemaphoreTake(vsync_sem, portMAX_DELAY);
+        wait_latched(since);
         uint8_t *t = front; front = back; back = t;
 
         if (++frames == 100) {

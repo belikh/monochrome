@@ -13,6 +13,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "knot.h"
+#include "netfb.h"
+#include "frames.h"
 
 #define PIN_VIDEO 4
 #define PIN_INTEN 5
@@ -28,9 +30,11 @@
 //   0  static calibration pattern
 //   1  bouncing wireframe icosahedron (frame buffer in internal RAM)
 //   2  shaded 3D torus knot (two frame buffers in PSRAM behind a bounce buffer)
+//   3  network frame buffer: joins Wi-Fi and shows frames sent over TCP (same buffers as mode 2)
 #ifndef MODE
-#define MODE 2
+#define MODE 3
 #endif
+#define PSRAM_FB (MODE == 2 || MODE == 3)
 
 // In mode 2 the RGB driver fills two small internal-RAM bounce buffers from the PSRAM frame buffer.
 // The number of bounce chunks per frame must be even: with an odd number (10 lines = 35 chunks,
@@ -98,6 +102,22 @@ __attribute__((unused)) static void test_pattern(void)
 // ---- 3D screensaver: icosahedron, depth-cued, bouncing -------------------------------
 
 static SemaphoreHandle_t vsync_sem;
+
+volatile uint32_t g_latched;
+static SemaphoreHandle_t latch_sem;
+
+static bool IRAM_ATTR on_frame_done(esp_lcd_panel_handle_t p, const esp_lcd_rgb_panel_event_data_t *e, void *u)
+{
+    g_latched++;
+    BaseType_t woken = pdFALSE;
+    xSemaphoreGiveFromISR(latch_sem, &woken);
+    return woken == pdTRUE;
+}
+
+void wait_latched(uint32_t since)
+{
+    while (g_latched == since) xSemaphoreTake(latch_sem, pdMS_TO_TICKS(25));
+}
 
 static bool IRAM_ATTR on_vsync(esp_lcd_panel_handle_t p, const esp_lcd_rgb_panel_event_data_t *e, void *u)
 {
@@ -180,9 +200,9 @@ void app_main(void)
         .clk_src = LCD_CLK_SRC_DEFAULT,
         .data_width = 8,
         .bits_per_pixel = 8,
-        .num_fbs = MODE == 2 ? 2 : 1,
+        .num_fbs = PSRAM_FB ? 2 : 1,
         .dma_burst_size = 64,
-        .bounce_buffer_size_px = MODE == 2 ? BOUNCE_LINES * W : 0,
+        .bounce_buffer_size_px = PSRAM_FB ? BOUNCE_LINES * W : 0,
         .hsync_gpio_num = PIN_HSYNC,
         .vsync_gpio_num = PIN_VSYNC,
         .de_gpio_num = -1,                 // HV mode: no data-enable
@@ -207,22 +227,27 @@ void app_main(void)
                 .pclk_active_neg = false,
             },
         },
-        .flags = { .fb_in_psram = MODE == 2 },
+        .flags = { .fb_in_psram = PSRAM_FB },
     };
 
     esp_lcd_panel_handle_t panel;
     vsync_sem = xSemaphoreCreateBinary();
+    latch_sem = xSemaphoreCreateBinary();
     ESP_ERROR_CHECK(esp_lcd_new_rgb_panel(&cfg, &panel));
-    esp_lcd_rgb_panel_event_callbacks_t cbs = { .on_vsync = on_vsync };
+    esp_lcd_rgb_panel_event_callbacks_t cbs = { .on_vsync = on_vsync, .on_frame_buf_complete = on_frame_done };
     ESP_ERROR_CHECK(esp_lcd_rgb_panel_register_event_callbacks(panel, &cbs, NULL));
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
 
     ESP_LOGI(TAG, "MDA video running: %dx%d, pclk %d Hz, mode %d", W, H, 16257000, MODE);
-#if MODE == 2
+#if PSRAM_FB
     uint8_t *f0, *f1;
     ESP_ERROR_CHECK(esp_lcd_rgb_panel_get_frame_buffer(panel, 2, (void **)&f0, (void **)&f1));
-    knot_run(panel, f0, f1, vsync_sem);
+#if MODE == 2
+    knot_run(panel, f0, f1);
+#else
+    netfb_start(panel, f0, f1);
+#endif
 #else
     ESP_ERROR_CHECK(esp_lcd_rgb_panel_get_frame_buffer(panel, 1, (void **)&fb));
 #if MODE == 1

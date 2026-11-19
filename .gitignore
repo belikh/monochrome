@@ -6,3 +6,4 @@ dependencies.lock
 audit.log
 logs/
 .claude/
+__pycache__/
