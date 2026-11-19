@@ -30,7 +30,7 @@ You need ESP-IDF 5.5 and an ESP32-S3-DevKitC-1 with the N16R8 module (16 MB flas
    idf.py -p /dev/ttyACM0 flash monitor
    ```
 
-The monitor prints `MDA video running: 720x350, pclk 16257000 Hz, mode 2` when the video driver has started. The default mode shows a 3D torus knot. See [[guides/choose-a-demo]] for the others.
+The monitor prints `MDA video running: 720x350, pclk 16257000 Hz, mode 3` when the video driver has started. The default mode joins Wi-Fi and shows frames that you send. Set the network first. See [[guides/send-frames-over-wifi]]. For a demo that needs no network, see [[guides/choose-a-demo]].
 
 :::note
 The DevKitC-1 has two USB ports. The port wired to the UART bridge carries the console log. Flashing worked through that port, and it showed up as `/dev/ttyACM0` on Linux.

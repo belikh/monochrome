@@ -115,17 +115,50 @@ Set ``MODE`` in ``main/main.c`` and rebuild.
 
    * - ``MODE``
      - Shows
-   * - 2 (default)
+   * - 3 (default)
+     - Frames sent over Wi-Fi by TCP or UDP. Until one arrives, the monitor shows the board's IP address.
+   * - 2
      - A shaded 3D torus knot with a light orbiting it, at 49 frames per second.
    * - 1
      - A wireframe icosahedron that tumbles and bounces around the screen.
    * - 0
      - A static calibration pattern with borders, a grid, intensity blocks and a checkerboard.
 
+Send frames over Wi-Fi
+----------------------
+
+Mode 3 joins a 2.4 GHz Wi-Fi network and shows the frames that a program sends to port 5050 over TCP or UDP. Frames can be compressed with zlib.
+
+.. code-block:: sh
+
+   idf.py menuconfig          # Monochrome menu: network name and password
+   idf.py -p /dev/ttyACM0 flash monitor
+   python3 tools/send.py 192.168.2.166 --demo --udp --fmt 2bpp --fps 50 --zlib
+
+The monitor shows the board's IP address until a frame arrives. The network settings go into ``sdkconfig``, which Git ignores. ``tools/send.py`` needs only Python 3. Frame formats and header layouts are in the frame protocol reference on docs.jupiter.au.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Format
+     - Bytes per frame
+     - Measured with the demo pattern
+   * - 1 bit per pixel, UDP, compressed
+     - 1.0 KB
+     - 49.7 frames per second
+   * - 2 bits per pixel, UDP, compressed
+     - 1.8 KB
+     - 49.7 frames per second
+   * - 2 bits per pixel, UDP, not compressed
+     - 62 KB
+     - 40 frames per second, about one packet in five lost
+
+The demo is a repeating pattern, so it compresses far better than a photo.
+
 Draw
 ----
 
-The frame buffer holds one byte per pixel, 720x350 pixels: ``0x00`` is black, ``0x01`` is normal and ``0x03`` is bright. To show your own image, draw into the frame buffer in ``test_pattern()`` (mode 0). Mode 2 keeps two frame buffers in PSRAM, draws into the hidden one and flips. ``knot_run()`` in ``main/knot.c`` shows how.
+The frame buffer holds one byte per pixel, 720x350 pixels: ``0x00`` is black, ``0x01`` is normal and ``0x03`` is bright. To draw from the firmware, write into the frame buffer in ``test_pattern()`` (mode 0). Modes 2 and 3 keep two frame buffers in PSRAM, draw into the hidden one and flip. ``knot_run()`` in ``main/knot.c`` shows how.
 
 .. raw:: html
 
@@ -133,7 +166,7 @@ The frame buffer holds one byte per pixel, 720x350 pixels: ``0x00`` is black, ``
      <tr align="left"><th>Note</th></tr>
      <tr><td>
 
-Mode 2 sends the frame buffer through two 35-line bounce buffers. The number of bounce chunks per frame must be even. With 10-line chunks (35 per frame) or 70-line chunks (5 per frame) the picture bounced or showed repeated bands. Keep V-sync active low. Positive V-sync changed the picture size on the monitor this was tested on.
+Modes 2 and 3 send the frame buffers through two 35-line bounce buffers. The number of bounce chunks per frame must be even. With 10-line chunks (35 per frame) or 70-line chunks (5 per frame) the picture bounced or showed repeated bands. Keep V-sync active low. Positive V-sync changed the picture size on the monitor this was tested on.
 
 .. raw:: html
 

@@ -23,7 +23,7 @@ The monitor shows three levels: black (`0x00`), normal (`0x01`) and bright (`0x0
 
 1. **Prepare (core 0, about 2.2 ms).** Rotate the vertices and normals with one combined matrix, project them, light them, drop back-facing triangles and sort the rest far to near with a bucket sort.
 2. **Rasterise (both cores, about 15 ms each).** The screen is split into ten strips of 35 lines. Each core takes the next unclaimed strip, draws it into a small buffer in internal RAM, and copies it into the PSRAM frame buffer. A core that is busy with display interrupts takes fewer strips.
-3. **Flip.** The firmware calls `esp_lcd_panel_draw_bitmap` with the finished buffer, which tells the driver to scan it out from the next frame. It then waits for one V-sync before it reuses the old buffer.
+3. **Flip.** The firmware calls `esp_lcd_panel_draw_bitmap` with the finished buffer, which tells the driver to scan it out from the next frame. It then waits until the driver has switched to the new buffer before it reuses the old one. See [How the video works](how-the-video-works.md).
 
 Frames take 17 to 18 ms to render, against 20.07 ms between V-syncs.
 

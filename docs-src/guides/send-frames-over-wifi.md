@@ -1,0 +1,79 @@
+---
+title: Send frames over Wi-Fi
+summary: Join the board to Wi-Fi, find its address and stream a picture to the monitor.
+order: 5
+icon: wifi
+audience: users
+status: draft
+---
+
+Mode 3 joins your Wi-Fi network and shows the frames that a program on your network sends. The board needs a 2.4 GHz network. The ESP32-S3 does not use 5 GHz.
+
+## Set the network
+
+1. Open the configuration menu.
+
+   ```sh title="Configure"
+   idf.py menuconfig
+   ```
+
+2. Open the Monochrome menu and enter the network name and password. Leave the password empty for an open network.
+3. Build and flash. See [[start/build-and-flash]].
+
+The settings are saved in `sdkconfig`, which Git ignores, so the password does not reach the repository.
+
+## Find the address
+
+The monitor shows the board's IP address and port in large digits. The border is dim until the board has an address and bright once it has one. The same address appears in the log:
+
+```text title="Log"
+netfb: got IP 192.168.2.166, listening on port 5050
+```
+
+## Send a test pattern
+
+Run the sender from the repository on any computer on the same network. It needs only Python 3.
+
+```sh title="Scrolling bars over UDP"
+python3 tools/send.py 192.168.2.166 --demo --udp --fmt 2bpp --fps 50 --zlib
+```
+
+The monitor shows scrolling bars. Press Ctrl-C to stop. When a TCP client leaves or a UDP stream stops, the monitor keeps the last frame.
+
+## Send your own picture
+
+With Pillow installed, send an image file. The sender scales it to 720x350.
+
+```sh title="Send an image"
+python3 tools/send.py 192.168.2.166 --image picture.png --fmt 1bpp --zlib
+```
+
+You can also send a raw frame file in any format. The file size must match the format. See [[reference/frame-protocol]].
+
+```sh title="Send a raw frame"
+python3 tools/send.py 192.168.2.166 --raw frame.bin --fmt 2bpp --udp --zlib
+```
+
+## Options
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--udp` | off | Send over UDP instead of TCP. |
+| `--fmt` | `2bpp` | Pixel format: `1bpp`, `2bpp` or `8bpp`. |
+| `--fps` | 25 | Frames per second to send. |
+| `--zlib` | off | Compress frames (TCP) or rows (UDP). |
+| `--delta` | off | UDP only: send only the rows that changed since the last frame. |
+| `--port` | 5050 | The port that the board listens on. |
+
+## Choose a format
+
+- Use 1 bit per pixel for fast animation. It has no brightness levels.
+- Use 2 bits per pixel for three levels. It needs about 2.5 MB/s uncompressed at 40 frames per second, which is near the limit of a typical Wi-Fi link. Use `--zlib` or stay at 30 frames per second or fewer.
+- Use `--zlib` whenever the picture has flat areas, text or repeating patterns.
+- Use `--delta` with UDP for a screen that mostly stays still.
+- Avoid 8 bits per pixel over Wi-Fi unless you need the extra bits. The monitor can show only black, normal and bright, so 2 bits cover every level.
+
+:::see-also
+- [[reference/frame-protocol]]
+- [[guides/choose-a-demo]]
+:::

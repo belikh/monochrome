@@ -29,6 +29,14 @@ The V-sync interval measured 20,072 to 20,073 microseconds in every frame in all
 
 The options `CONFIG_LCD_RGB_RESTART_IN_VSYNC`, `CONFIG_LCD_RGB_ISR_IRAM_SAFE` and 64-byte data cache lines did not fix the odd-count cases, and the firmware does not use them.
 
+## Reuse a frame buffer only after the driver latches the new one
+
+With two frame buffers, a program draws into the hidden one and calls `esp_lcd_panel_draw_bitmap` with it. That call does not wait. The driver switches to the new buffer once per frame, when it has copied the last chunk of the frame into the bounce buffers. It then calls `on_frame_buf_complete`. The old buffer is free to overwrite only after that call.
+
+Waiting one V-sync after the flip is not enough. If the flip happens in the last few dozen lines of a frame, the driver reads the old buffer for one more frame, and a program that writes into it shows torn lines. The firmware counts the `on_frame_buf_complete` calls in `g_latched` and waits for the count to advance before it writes (`wait_latched` in `main/main.c`).
+
+The Wi-Fi receiver exposed this. Its first version blocked for up to a frame after each flip, so most UDP packets overflowed the receive queue (about 9 of 50 packets per frame arrived). Waiting lazily, only when the next frame starts, raised that to 40 to 49 of 50 and removed the visible tearing.
+
 ## Keep V-sync active low
 
 MDA uses an active-low V-sync and an active-high H-sync. When the firmware sent an active-high V-sync, the monitor used for development changed its picture size and brightened the raster. That suggests the monitor selects a CGA-style mode from the V-sync polarity. The firmware sets `vsync_idle_low = false` to keep the MDA mode.
@@ -39,6 +47,7 @@ A Hercules card sends the same kind of signal: the same DE-9 pins, the same TTL 
 
 **See also**
 
+- [Frame protocol](../reference/frame-protocol.md)
 - [How the 3D demo works](how-the-3d-demo-works.md)
 - [Timing](../reference/timing.md)
 - [MDA](../reference/glossary.md#term-mda)
