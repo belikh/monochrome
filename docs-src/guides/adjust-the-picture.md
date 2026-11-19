@@ -20,7 +20,7 @@ To move the picture sideways, trade pixels between `hsync_front_porch` and `hsyn
 | `vsync_front_porch` | 1 | 4 with `vsync_back_porch` |
 | `vsync_back_porch` | 3 | 4 with `vsync_front_porch` |
 
-Rebuild and flash after each change. See [[start/build-and-flash]].
+Rebuild and flash after each change. See [[start/build-and-flash]]. Set `MODE` to 0 to see the border and grid while you adjust. See [[guides/choose-a-demo]].
 
 ## Margin around the picture
 

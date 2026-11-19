@@ -105,10 +105,27 @@ You need ESP-IDF 5.5.
 
 With the video wire unplugged you should still get a steady raster. Connect video once the monitor holds lock.
 
+Choose a demo
+-------------
+
+Set ``MODE`` in ``main/main.c`` and rebuild.
+
+.. list-table::
+   :header-rows: 1
+
+   * - ``MODE``
+     - Shows
+   * - 2 (default)
+     - A shaded 3D torus knot with a light orbiting it, at 49 frames per second.
+   * - 1
+     - A wireframe icosahedron that tumbles and bounces around the screen.
+   * - 0
+     - A static calibration pattern with borders, a grid, intensity blocks and a checkerboard.
+
 Draw
 ----
 
-The framebuffer is 720x350 bytes, one byte per pixel: ``0x00`` is black, ``0x01`` is normal and ``0x03`` is bright. ``test_pattern()`` in ``main/main.c`` fills it with borders, a grid, diagonals, two intensity blocks, a checkerboard and a circle. Replace that function to show your own image.
+The frame buffer holds one byte per pixel, 720x350 pixels: ``0x00`` is black, ``0x01`` is normal and ``0x03`` is bright. To show your own image, draw into the frame buffer in ``test_pattern()`` (mode 0). Mode 2 keeps two frame buffers in PSRAM, draws into the hidden one and flips. ``knot_run()`` in ``main/knot.c`` shows how.
 
 .. raw:: html
 
@@ -116,7 +133,7 @@ The framebuffer is 720x350 bytes, one byte per pixel: ``0x00`` is black, ``0x01`
      <tr align="left"><th>Note</th></tr>
      <tr><td>
 
-Keep the framebuffer in internal RAM and keep V-sync active low. With the framebuffer in PSRAM behind a bounce buffer, the picture jittered vertically on the monitor this was tested on. Positive V-sync changed that monitor's picture size.
+Mode 2 sends the frame buffer through two 35-line bounce buffers. The number of bounce chunks per frame must be even. With 10-line chunks (35 per frame) or 70-line chunks (5 per frame) the picture bounced or showed repeated bands. Keep V-sync active low. Positive V-sync changed the picture size on the monitor this was tested on.
 
 .. raw:: html
 

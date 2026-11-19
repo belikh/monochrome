@@ -4,14 +4,30 @@
 
 The ESP32-S3 has an RGB LCD peripheral that reads pixels by DMA and outputs them with sync pulses. The firmware uses it as an MDA video source. The monitor takes video, intensity, H-sync and V-sync, and needs no pixel clock, so the firmware sets `pclk_gpio_num` and `de_gpio_num` to -1.
 
-## Keep the framebuffer in internal RAM
+## Frame buffers
 
-The 720 x 350 framebuffer is 252,000 bytes and fits in the internal RAM of the S3. The firmware sets `.flags = { .fb_in_psram = false }` and does not use a bounce buffer.
+The 720 x 350 frame buffer is 252,000 bytes. The firmware offers two layouts:
 
-An earlier version kept the framebuffer in PSRAM and used a bounce buffer of 10 lines. On the monitor used to develop this firmware, that version produced a picture that bounced vertically and showed doubled lines. The sync outputs measured correctly at the chip in both versions. Moving the framebuffer to internal RAM removed the bounce. The Espressif documentation describes late refills of the bounce buffer as a cause of shifted images.
+| Layout | Used by | Frame buffer | Bounce buffer |
+| --- | --- | --- | --- |
+| Internal RAM | Modes 0 and 1 | One, in internal RAM | None |
+| PSRAM | Mode 2 | Two, in PSRAM | Two of 35 lines each, in internal RAM |
 
-> [!WARNING]
-> Do not move the framebuffer back to PSRAM without checking the picture on your monitor.
+With the PSRAM layout the driver copies the frame buffer into the [Bounce buffer](../reference/glossary.md#term-bounce-buffer) pair in small chunks, and the DMA reads the bounce buffers. The PSRAM layout leaves most of the internal RAM free and lets a program draw into one buffer while the DMA shows the other.
+
+## Keep the bounce chunk count even
+
+The number of bounce chunks per frame must be even. The firmware checks this at compile time in `main/main.c`.
+
+| Bounce size | Chunks per frame | Result on the test monitor |
+| --- | --- | --- |
+| 10 lines | 35 (odd) | Picture bounced vertically and showed doubled lines |
+| 70 lines | 5 (odd) | Picture steady, but bands of 70 lines repeated or swapped |
+| 35 lines | 10 (even) | Steady and correct |
+
+The V-sync interval measured 20,072 to 20,073 microseconds in every frame in all of these cases, so the sync timing was never the problem. The scrambled bands show that the data order was wrong. The driver alternates two bounce buffers and restarts the DMA from the first buffer at each V-sync. An odd chunk count leaves the two out of step at the end of a frame. This explanation fits the three results above. The sizes 25 lines and 5 lines (also an even count) were not tested.
+
+The options `CONFIG_LCD_RGB_RESTART_IN_VSYNC`, `CONFIG_LCD_RGB_ISR_IRAM_SAFE` and 64-byte data cache lines did not fix the odd-count cases, and the firmware does not use them.
 
 ## Keep V-sync active low
 
@@ -23,5 +39,6 @@ A Hercules card sends the same kind of signal: the same DE-9 pins, the same TTL 
 
 **See also**
 
+- [How the 3D demo works](how-the-3d-demo-works.md)
 - [Timing](../reference/timing.md)
 - [MDA](../reference/glossary.md#term-mda)

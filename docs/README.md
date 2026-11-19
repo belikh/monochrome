@@ -2,6 +2,6 @@
 
 # Monochrome
 
-Monochrome is ESP-IDF firmware for an ESP32-S3-DevKitC-1 (N16R8). It drives a TTL monochrome monitor of the [MDA](reference/glossary.md#term-mda) or Hercules type through a DE-9 connector. The firmware draws a calibration pattern with two brightness levels, and you replace it with your own image.
+Monochrome is ESP-IDF firmware for an ESP32-S3-DevKitC-1 (N16R8). It drives a TTL monochrome monitor of the [MDA](reference/glossary.md#term-mda) or Hercules type through a DE-9 connector. The firmware includes a shaded 3D torus knot that runs at 49 frames per second, a wireframe screensaver and a calibration pattern, all drawn with three brightness levels.
 
 Start with [Build and flash](start/build-and-flash.md).

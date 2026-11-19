@@ -1,0 +1,50 @@
+---
+title: How the 3D demo works
+summary: A software renderer that draws a shaded torus knot at 49 frames per second on both cores.
+order: 20
+icon: cpu
+audience: developers
+status: draft
+---
+
+Mode 2 runs a software 3D renderer in `main/knot.c`. It draws a lit torus knot at 49 frames per second, which is the display's own rate of about 49.8 Hz.
+
+## The scene
+
+| Item | Value |
+| --- | --- |
+| Mesh | A (2,3) torus knot, 64 segments along the curve and 12 around the tube: 768 vertices, 1,536 triangles |
+| Triangles drawn per frame | About 810 after back-face culling |
+| Shading | Per-vertex diffuse and specular light, interpolated across each triangle (Gouraud) |
+| Light | Orbits the knot |
+| Depth cue | Far parts are dimmer |
+| Background | 140 drifting single-pixel stars |
+
+## Pixel output
+
+The monitor shows three levels: black (`0x00`), normal (`0x01`) and bright (`0x03`). The renderer works in 8-bit brightness and uses an 8x8 ordered (Bayer) dither to choose between the two nearest levels for each pixel. It scales x by 1.54 so that shapes stay round, because pixels on a 4:3 tube showing 720x350 are taller than wide.
+
+## Each frame
+
+1. **Prepare (core 0, about 2.2 ms).** Rotate the vertices and normals with one combined matrix, project them, light them, drop back-facing triangles and sort the rest far to near with a bucket sort.
+2. **Rasterise (both cores, about 15 ms each).** The screen is split into ten strips of 35 lines. Each core takes the next unclaimed strip, draws it into a small buffer in internal RAM, and copies it into the PSRAM frame buffer. A core that is busy with display interrupts takes fewer strips.
+3. **Flip.** The firmware calls `esp_lcd_panel_draw_bitmap` with the finished buffer, which tells the driver to scan it out from the next frame. It then waits for one V-sync before it reuses the old buffer.
+
+Frames take 17 to 18 ms to render, against 20.07 ms between V-syncs.
+
+## What made it fast
+
+The first version ran at 25 fps with 27 to 29 ms per frame. These changes brought it to 49 fps:
+
+| Change | Effect |
+| --- | --- |
+| Draw into internal-RAM strips and copy to PSRAM | Fewer slow PSRAM writes |
+| Halve the mesh (128x14 to 64x12 segments) | Fewer, larger triangles and about half the per-row setup cost; prepare dropped from 5.3 ms to 2.2 ms |
+| Reciprocal table instead of an integer divide per scanline | Cheaper span setup |
+| Strips shared between cores through an atomic counter | Both cores stay busy |
+| Brightness limited to 2..253 | The pixel loop needs no clamps |
+
+:::see-also
+- [[concepts/how-the-video-works]]
+- [[guides/choose-a-demo]]
+:::

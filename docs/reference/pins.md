@@ -20,7 +20,7 @@ The framebuffer holds one byte per pixel. Bit 0 drives the video pin and bit 1 d
 | `0x01` | Normal brightness |
 | `0x03` | Bright |
 
-The framebuffer is 720 x 350 bytes (252,000 bytes), indexed as `fb[y * 720 + x]`. The firmware sets the pins in `main/main.c` with `PIN_VIDEO`, `PIN_INTEN`, `PIN_HSYNC` and `PIN_VSYNC`.
+Each frame buffer is 720 x 350 bytes (252,000 bytes), indexed as `fb[y * 720 + x]`. Mode 2 has two frame buffers and modes 0 and 1 have one. The firmware sets the pins in `main/main.c` with `PIN_VIDEO`, `PIN_INTEN`, `PIN_HSYNC` and `PIN_VSYNC`.
 
 **See also**
 
