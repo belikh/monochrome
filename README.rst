@@ -200,6 +200,13 @@ If the picture is off centre, move pixels between the horizontal front and back 
 
 |
 
+Licence
+-------
+
+MIT. See `LICENSE <LICENSE>`_.
+
+|
+
 .. raw:: html
 
    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/belikh/design/latest/packages/github/graphics/rule/end-dark.svg"><img alt="" src="https://raw.githubusercontent.com/belikh/design/latest/packages/github/graphics/rule/end-light.svg" width="50%"></picture></p>
