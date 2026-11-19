@@ -26,12 +26,33 @@ python3 tools/jupiter_display.py 192.168.2.166 --demo warehouse
 
 Available screens: `overview`, `analytics`, `alerts`, `orders`, `invoice`, `network`, `settings`, and `warehouse`.
 
+## Home Assistant and animated screens
+
+A companion sender includes Home Assistant status, energy flow, climate and an animated original retro-futurist executive character. It uses sample data by default; optional Home Assistant integration reads states only and never calls services:
+
+```sh
+python3 tools/ha_display.py 192.168.2.166 --demo all --fps 2 --repeat
+python3 tools/ha_display.py 192.168.2.166 --demo house --fps 8 --repeat
+```
+
+For live Home Assistant values, create a long-lived access token in your Home Assistant profile and keep it out of shell history and source control. Set it in the environment, then pass the instance URL:
+
+```sh
+export HA_TOKEN='your-long-lived-access-token'
+python3 tools/ha_display.py 192.168.2.166 --ha-url http://homeassistant.local:8123 --demo all --repeat
+```
+
+The default entity IDs are `sensor.home_temperature`, `sensor.home_humidity`, `sensor.solar_power`, `sensor.grid_power`, `sensor.battery_soc`, `sensor.house_power`, `person.homeowner` and `weather.home`. Override any key with `HA_ENTITY_TEMPERATURE`, `HA_ENTITY_HUMIDITY`, `HA_ENTITY_SOLAR`, `HA_ENTITY_GRID`, `HA_ENTITY_BATTERY`, `HA_ENTITY_HOUSE`, `HA_ENTITY_PRESENCE` or `HA_ENTITY_WEATHER`. The integration calls Home Assistant's read-only `/api/states/<entity_id>` endpoint and polls at a low rate. Without credentials, screens display sample data.
+
+The animated character is original retro-futurist casino-computer artwork: a geometric face, blinking eyes, moving scan line and changing status text. It is not a reproduction of Fallout character artwork or dialogue.
+
 ## Preview a screen
 
 Render a screen to a portable graymap without connecting to a board:
 
 ```sh
 python3 tools/jupiter_display.py --demo analytics --preview /tmp/analytics.pgm
+python3 tools/ha_display.py --demo house --preview /tmp/house.pgm
 ```
 
 The preview uses gray values for the three display intensities; on hardware those intensities appear as green phosphor. Pillow is optional. If installed, provide the Jupiter SGI Text and SGI Alt font files to use them for body and display text:
@@ -41,7 +62,7 @@ python3 tools/jupiter_display.py 192.168.2.166 --demo all --repeat \
   --font /path/to/sgi-text.ttf --font-bold /path/to/sgi-alt.ttf
 ```
 
-Without Pillow or font files, the script uses a compact built-in bitmap fallback. The web demo screens are adapted compositions for 720 × 350, not screenshots of the browser UI; dense controls and color-only distinctions are replaced with readable text, outlines and phosphor intensity.
+Without Pillow or font files, the Jupiter sender uses a compact built-in bitmap fallback. The web demo screens are adapted compositions for 720 × 350, not screenshots of the browser UI; dense controls and color-only distinctions are replaced with readable text, outlines and phosphor intensity.
 
 ## Display setup
 
